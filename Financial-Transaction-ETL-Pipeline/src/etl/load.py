@@ -1,0 +1,1 @@
+# decided not to load the data into the database for this analysis, I just process , transform and save processed data to a csv file

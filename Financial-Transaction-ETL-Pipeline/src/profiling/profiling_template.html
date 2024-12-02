@@ -1,0 +1,91 @@
+<!-- profiling/profiling_template.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Data Profiling Report</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <style>
+        body { padding: 20px; }
+        h1, h2, h3 { margin-top: 30px; }
+        .table { margin-bottom: 30px; }
+        .plot-img { max-width: 100%; height: auto; margin-bottom: 20px; }
+        .outlier-table { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Data Profiling Report</h1>
+
+    <h2>1. Descriptive Statistics</h2>
+    {{ descriptive_stats | safe }}
+
+    <h2>2. Data Types</h2>
+    {{ data_types | safe }}
+
+    <h2>3. Missing Values</h2>
+    {{ missing_values | safe }}
+
+    <h2>4. Unique Values per Column</h2>
+    {{ unique_values | safe }}
+
+    <h2>5. Duplicate Rows</h2>
+    <p>Number of duplicate rows: {{ num_duplicates }}</p>
+    {% if num_duplicates > 0 %}
+        <h3>Sample Duplicate Rows</h3>
+        {{ duplicate_samples | safe }}
+    {% endif %}
+
+    <h2>6. Value Distributions</h2>
+    {% for plot in plots %}
+        <h3>{{ plot.title }}</h3>
+        {% if plot.type == 'image' %}
+            <div>
+                <img src="data:image/png;base64,{{ plot.content }}" class="plot-img" alt="{{ plot.title }}">
+            </div>
+        {% elif plot.type == 'table' %}
+            <div>
+                {{ plot.content | safe }}
+            </div>
+        {% endif %}
+    {% endfor %}
+
+    <h2>7. Correlation Matrix</h2>
+    <div>
+        <img src="data:image/png;base64,{{ correlation_plot }}" class="plot-img" alt="Correlation Matrix">
+    </div>
+    {{ correlation_matrix | safe }}
+
+    <h2>8. Outliers Detection</h2>
+    {% for col, outlier_info in outliers.items() %}
+        <h3>Column: {{ col }}</h3>
+        <p>Number of outliers: {{ outlier_info['num_outliers'] }}</p>
+        <p>Mean: {{ outlier_info['mean'] }}</p>
+        <p>Median: {{ outlier_info['median'] }}</p>
+        <p>Standard Deviation: {{ outlier_info['std'] }}</p>
+        <p>90th Percentile: {{ outlier_info['percentile_90'] }}</p>
+        {% if outlier_info['num_outliers'] > 0 %}
+            <h4>Sample Outlier Rows</h4>
+            <table class="table table-striped table-bordered outlier-table">
+                <thead>
+                    <tr>
+                        {% for key in outlier_info['outlier_samples'][0].keys() %}
+                            <th>{{ key }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in outlier_info['outlier_samples'] %}
+                        <tr>
+                            {% for value in row.values() %}
+                                <td>{{ value }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    {% endfor %}
+
+</body>
+</html>

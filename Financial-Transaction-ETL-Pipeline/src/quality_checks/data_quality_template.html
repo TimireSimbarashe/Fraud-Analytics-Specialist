@@ -1,0 +1,136 @@
+<!-- src/quality_checks/data_quality_template.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Data Quality Report</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <style>
+        body { padding: 20px; }
+        h1, h2, h3, h4 { margin-top: 30px; }
+        .table { margin-bottom: 30px; font-size: 12px; }
+        .issue-section { margin-bottom: 40px; }
+        .status-passed { color: green; }
+        .status-failed { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Data Quality Report</h1>
+
+    <h2>Summary of Data Quality Checks</h2>
+    <table class="table table-striped table-bordered">
+        <thead>
+            <tr>
+                <th>Check</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for check, status in check_results.items() %}
+            <tr>
+                <td>{{ check }}</td>
+                {% if status == 'Passed' %}
+                <td class="status-passed">{{ status }}</td>
+                {% else %}
+                <td class="status-failed">{{ status }}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if data_quality_issues %}
+    <h2>Details of Data Quality Issues</h2>
+    {% endif %}
+
+    {% if data_quality_issues.incorrect_types %}
+    <div class="issue-section">
+        <h3>Incorrect Data Types</h3>
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>Column</th>
+                    <th>Expected Type</th>
+                    <th>Actual Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for column, types in data_quality_issues.incorrect_types.items() %}
+                <tr>
+                    <td>{{ column }}</td>
+                    <td>{{ types.expected }}</td>
+                    <td>{{ types.actual }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if data_quality_issues.value_issues %}
+    <div class="issue-section">
+        <h3>Value Issues</h3>
+        {% for column, issue in data_quality_issues.value_issues.items() %}
+        <h4>{{ issue.description }}</h4>
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    {% for col in issue.invalid_rows.columns %}
+                    <th>{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for _, row in issue.invalid_rows.head(5).iterrows() %}
+                <tr>
+                    {% for value in row %}
+                    <td>{{ value }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if issue.invalid_rows.shape[0] > 5 %}
+        <p>... and {{ issue.invalid_rows.shape[0] - 5 }} more rows.</p>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if data_quality_issues.balance_inconsistencies %}
+    <div class="issue-section">
+        <h3>Balance Inconsistencies</h3>
+        {% for txn_type, inconsistencies in data_quality_issues.balance_inconsistencies.items() %}
+        <h4>{{ txn_type }} Transactions</h4>
+        <p>Number of inconsistent transactions: {{ inconsistencies.shape[0] }}</p>
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    {% for col in inconsistencies.columns %}
+                    <th>{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for _, row in inconsistencies.head(5).iterrows() %}
+                <tr>
+                    {% for value in row %}
+                    <td>{{ value }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if inconsistencies.shape[0] > 5 %}
+        <p>... and {{ inconsistencies.shape[0] - 5 }} more rows.</p>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not data_quality_issues %}
+    <h2>No Data Quality Issues Found</h2>
+    {% endif %}
+</body>
+</html>
